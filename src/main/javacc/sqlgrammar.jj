@@ -1,0 +1,817 @@
+options{
+    STATIC=false;
+    IGNORE_CASE=true;
+	UNICODE_INPUT=true;
+//	DEBUG_TOKEN_MANAGER = true;
+//  DEBUG_LOOKAHEAD= true ;
+}
+
+PARSER_BEGIN(SQLParser)
+
+package com.granveaud.mysql2h2converter.parser;
+
+import java.util.*;
+import com.granveaud.mysql2h2converter.sql.*;
+
+public class SQLParser {
+}
+
+PARSER_END(SQLParser)
+
+SKIP:
+{
+    " "
+|   "\t"
+|   "\r"
+|   "\n"
+|   <S_LINE_COMMENT: "--"(~["\r","\n"])*>
+|   <S_MULTI_LINE_COMMENT: "/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/">
+}
+
+// reserved SQL keywords
+TOKEN:
+{
+    <TODO: "TODO">
+|   <USE: "USE">
+|   <CREATE: "CREATE">
+|   <DROP: "DROP">
+|   <DATABASE: "DATABASE">
+|   <IF: "IF">
+|   <NOT: "NOT">
+|   <EXISTS: "EXISTS">
+|   <TEMPORARY: "TEMPORARY">
+|   <TABLE: "TABLE">
+|   <NULL: "NULL">
+|   <K_DEFAULT: "DEFAULT">
+|   <AUTO_INCREMENT: "AUTO_INCREMENT">
+|   <PRIMARY: "PRIMARY">
+|   <KEY: "KEY">
+|   <COMMENT: "COMMENT">
+|   <ASC: "ASC">
+|   <DESC: "DESC">
+|   <BIT: "BIT">
+|   <TINYINT: "TINYINT">
+|   <UNSIGNED: "UNSIGNED">
+|   <ZEROFILL: "ZEROFILL">
+|   <SMALLINT: "SMALLINT">
+|   <MEDIUMINT: "MEDIUMINT">
+|   <INT: "INT">
+|   <INTEGER: "INTEGER">
+|   <BIGINT: "BIGINT">
+|   <REAL: "REAL">
+|   <DOUBLE: "DOUBLE">
+|   <DECIMAL: "DECIMAL">
+|   <FLOAT: "FLOAT">
+|   <NUMERIC: "NUMERIC">
+|   <DATE: "DATE">
+|   <DATETIME: "DATETIME">
+|   <TIME: "TIME">
+|   <TIMESTAMP: "TIMESTAMP">
+|   <CHAR: "CHAR">
+|   <BINARY: "BINARY">
+|   <ASCII: "ASCII">
+|   <UNICODE: "UNICODE">
+|   <VARCHAR: "VARCHAR">
+|   <TINYBLOB: "TINYBLOB">
+|   <BLOB: "BLOB">
+|   <MEDIUMBLOB: "MEDIUMBLOB">
+|   <LONGBLOB: "LONGBLOB">
+|   <TINYTEXT: "TINYTEXT">
+|   <TEXT: "TEXT">
+|   <MEDIUMTEXT: "MEDIUMTEXT">
+|   <LONGTEXT: "LONGTEXT">
+|   <ENUM: "ENUM">
+|   <SET: "SET">
+|   <CONSTRAINT: "CONSTRAINT">
+|   <USING: "USING">
+|   <INDEX: "INDEX">
+|   <UNIQUE: "UNIQUE">
+|   <FULLTEXT: "FULLTEXT">
+|   <SPATIAL: "SPATIAL">
+|   <FOREIGN: "FOREIGN">
+|   <CHECK: "CHECK">
+|   <REFERENCES: "REFERENCES">
+|   <MATCH: "MATCH">
+|   <FULL: "FULL">
+|   <PARTIAL: "PARTIAL">
+|   <ON: "ON">
+|   <DELETE: "DELETE">
+|   <RESTRICT: "RESTRICT">
+|   <CASCADE: "CASCADE">
+|   <NO: "NO">
+|   <ACTION: "ACTION">
+|   <UPDATE: "UPDATE">
+|   <INSERT: "INSERT">
+|   <INTO: "INTO">
+|   <VALUES: "VALUES">
+|   <LOW_PRIORITY: "LOW_PRIORITY">
+|   <HIGH_PRIORITY: "HIGH_PRIORITY">
+|   <DELAYED: "DELAYED">
+|   <IGNORE: "IGNORE">
+|   <VALUE: "VALUE">
+|   <SELECT: "SELECT">
+|   <DUPLICATE: "DUPLICATE">
+|	<CURRENT_TIMESTAMP: "CURRENT_TIMESTAMP">
+|	<CHARACTER: "CHARACTER">
+|	<COLLATE: "COLLATE">
+}
+
+TOKEN:
+{
+	<S_IDENTIFIER: (<S_LETTER>)+ (<S_DIGIT> | <S_LETTER> | <S_SPECIAL_CHARS>)*>
+|   <S_QUOTED_IDENTIFIER: "\"" <S_IDENTIFIER> "\"" | ("`" <S_IDENTIFIER> "`")>
+| 	<#S_LETTER: ["a"-"z", "A"-"Z", "_"]>
+| 	<#S_DIGIT: ["0"-"9"]>
+|   <#S_SPECIAL_CHARS: "$" | "_">
+| 	<S_INTEGER: (["-","+"])? (<S_DIGIT>)+>
+|	<S_DOUBLE: ((<S_INTEGER>)? "." <S_INTEGER> ( ["e","E"] (["-","+"])? <S_INTEGER>)?
+				|
+				(<S_INTEGER>)+ (".")? ["e","E"] (["-","+"])? (<S_INTEGER>)+
+				)>
+|   <S_CHAR_LITERAL: <S_CHAR_SINGLE_QUOTE_LITERAL> | <S_CHAR_DOUBLE_QUOTE_LITERAL>>
+|   <#S_CHAR_SINGLE_QUOTE_LITERAL: "'" ( (~["'"])* ("'" "'")? ("\\" "'")? )* "'">
+|   <#S_CHAR_DOUBLE_QUOTE_LITERAL: "\"" ( (~["\""])* ("\\" "\"")? )* "\"">
+|   <S_BINARY_FORMAT1: "X" "'" (<S_HEX_DIGIT>)+ "'">
+|   <S_BINARY_FORMAT2: "0" "x" (<S_HEX_DIGIT>)+>
+|   <#S_HEX_DIGIT: ["a"-"f", "A"-"F", "0"-"9"]>
+}
+
+// parse entire script
+List<Statement> Script():
+{
+    List<Statement> stList = new ArrayList<Statement>();
+    Statement st = null;
+}
+{
+  (
+    st=Statement() ";" { stList.add(st); }
+  )*
+  <EOF>
+  {
+    return stList;
+  }
+}
+
+// parse one statement
+Statement Statement():
+{
+    Statement st = null;
+}
+{
+    (
+        st=UseStatement()
+        | st=SetStatement()
+        | st=CreateStatement()
+        | st=DropStatement()
+        | st=InsertStatement()
+        | { st=new EmptyStatement(); }
+    )
+    {
+        return st;
+    }
+}
+
+Statement SetStatement():
+{
+	Assignment assignment;
+}
+{
+	<SET> assignment=Assignment()
+	{
+		return new SetStatement(assignment);
+	}
+}
+
+
+/*
+INSERT [LOW_PRIORITY | DELAYED | HIGH_PRIORITY] [IGNORE]
+    [INTO] tbl_name [(col_name,...)]
+    {VALUES | VALUE} ({expr | DEFAULT},...),(...),...
+    [ ON DUPLICATE KEY UPDATE
+      col_name=expr
+        [, col_name=expr] ... ]
+Or:
+
+INSERT [LOW_PRIORITY | DELAYED | HIGH_PRIORITY] [IGNORE]
+    [INTO] tbl_name
+    SET col_name={expr | DEFAULT}, ...
+    [ ON DUPLICATE KEY UPDATE
+      col_name=expr
+        [, col_name=expr] ... ]
+Or:
+
+INSERT [LOW_PRIORITY | HIGH_PRIORITY] [IGNORE]
+    [INTO] tbl_name [(col_name,...)]
+    SELECT ...
+    [ ON DUPLICATE KEY UPDATE
+      col_name=expr
+        [, col_name=expr] ... ]
+*/
+Statement InsertStatement():
+{
+	List<ValueList> valueLists = null;
+	String tableName;
+	List<String> columnNames = null;
+	List<Assignment> assignments = null;
+	List<Assignment> onDuplicateKeyUpdateAssignments = null;
+	Token tk = null, tk2 = null, tk3 = null, tk4 = null, tk5 = null;
+}
+{
+	(
+		<INSERT> [tk=<LOW_PRIORITY> | tk2=<HIGH_PRIORITY>] [tk3=<DELAYED>] [tk4=<IGNORE>] [tk5=<INTO>]
+		tableName=DbObjectName()
+		["(" columnNames=DbObjectNames() ")"]
+		(
+			(<VALUES>|<VALUE>) valueLists=MultiValueList()
+			| <SET> assignments=Assignments()
+			| <SELECT>
+		)
+		[<ON> <DUPLICATE> <KEY> <UPDATE> onDuplicateKeyUpdateAssignments=Assignments()]
+	)
+	{
+		return new InsertStatement(tk != null, tk2 != null, tk3 != null, tk4 != null, tk5 != null, tableName,
+			columnNames, valueLists, assignments, onDuplicateKeyUpdateAssignments);
+	}
+}
+
+Statement UseStatement():
+{
+	String dbName;
+}
+{
+	<USE> dbName=DbObjectName()
+	{
+		return new UseStatement(dbName);
+	}
+}
+
+Statement CreateStatement():
+{
+    Statement st = null;
+}
+{
+    <CREATE>
+    (
+        st=CreateDatabaseStatement()
+        | st=CreateTableStatement()
+    )
+    {
+        return st;
+    }
+}
+
+Statement CreateDatabaseStatement():
+{
+    Token tk = null;
+    String dbName;
+}
+{
+	<DATABASE> [tk=<IF> <NOT> <EXISTS>] dbName=DbObjectName()
+    {
+        return new CreateDatabaseStatement(dbName, tk != null);
+    }
+}
+
+/*CREATE [TEMPORARY] TABLE [IF NOT EXISTS] tbl_name
+      [(create_definition,...)]
+      [table_options] [select_statement]
+
+*/
+Statement CreateTableStatement():
+{
+    Token tk = null, tk2 = null;
+    String tableName;
+    CreateTableDefinition definition = null;
+    List<CreateTableOption> options = null;
+}
+{
+	[tk=<TEMPORARY>] <TABLE> [tk2=<IF> <NOT> <EXISTS>] tableName=DbObjectName()
+	[definition=CreateTableDefinition()]
+	[options=CreateTableOptions()]
+    {
+        return new CreateTableStatement(tk != null, tk2 != null, tableName, definition, options);
+    }
+}
+
+List<CreateTableOption> CreateTableOptions():
+{
+    List<CreateTableOption> result = new ArrayList<CreateTableOption>();
+    CreateTableOption option = null;
+}
+{
+    (
+        option=CreateTableOption() { result.add(option); }
+        (
+            option=CreateTableOption() { result.add(option); }
+        )*
+    )
+    {
+        return result;
+    }
+}
+
+CreateTableOption CreateTableOption():
+{
+    Token tk1 = null, tk2 = null;
+}
+{
+    (tk1=<S_IDENTIFIER>|tk1=<K_DEFAULT>|tk1=<COMMENT>|tk1=<AUTO_INCREMENT>)
+    ["=" (tk2=<S_IDENTIFIER>|tk2=<S_CHAR_LITERAL>|tk2=<S_INTEGER>)]
+    {
+        return new CreateTableOption(tk1.image, (tk2 != null ? tk2.image : null));
+    }
+}
+
+CreateTableDefinition CreateTableDefinition():
+{
+    List<ColumnDefinition> columnDefinitions = new ArrayList<ColumnDefinition>();
+    List<ColumnConstraint> columnConstraints = new ArrayList<ColumnConstraint>();
+    ColumnDefinition columnDefinition;
+    ColumnConstraint columnConstraint;
+}
+{
+    "("
+    (
+        LOOKAHEAD(3)
+        columnDefinition=ColumnDefinition() { columnDefinitions.add(columnDefinition); }
+        | columnConstraint=ColumnConstraint() { columnConstraints.add(columnConstraint); }
+    )
+    (
+        ","
+        (
+            LOOKAHEAD(3)
+            columnDefinition=ColumnDefinition() { columnDefinitions.add(columnDefinition); }
+            | columnConstraint=ColumnConstraint() { columnConstraints.add(columnConstraint); }
+         )
+    )*
+    ")"
+    {
+        return new CreateTableDefinition(columnDefinitions, columnConstraints);
+    }
+}
+
+/*
+column_definition:
+        col_name type [NOT NULL | NULL] [DEFAULT default_value] [ON UPDATE update_value]
+        [AUTO_INCREMENT] [[PRIMARY] KEY] [COMMENT 'string']
+        [reference_definition]
+  */
+ColumnDefinition ColumnDefinition():
+{
+    ColumnName columnName;
+    ColumnType columnType;
+    Token tk = null, tk2 = null, tk3 = null, tk4 = null, tk5 = null;
+    Value defaultValue = null;
+    Value updateValue = null;
+    StringValue comment = null;
+    ColumnReference columnReference = null;
+}
+{
+    columnName=ColumnName() columnType=ColumnType()
+    (
+    	(tk=<NOT> <NULL>)
+    	| tk2=<NULL>
+    	| <K_DEFAULT> defaultValue=Value()
+    	| (<ON> <UPDATE> updateValue=Value())
+    	| tk3=<AUTO_INCREMENT>
+    	| ([tk4=<PRIMARY>] tk5=<KEY>)
+    	| <COMMENT> comment=StringValue()
+    	| columnReference=ColumnReference()
+    )*
+    {
+        return new ColumnDefinition(columnName, columnType, tk2 != null, tk != null, tk3 != null, tk4 != null, tk5 != null,
+         defaultValue, updateValue, comment, columnReference);
+    }
+}
+
+/*
+    col_name [(length)] [ASC | DESC]
+ */
+ColumnName ColumnName():
+{
+    String columnName;
+    IntegerValue length = null;
+    Token tk = null, tk2 = null;
+}
+{
+    columnName=DbObjectName() ["(" length=IntValue() ")"] [tk=<ASC>] [tk2=<DESC>]
+    {
+        return new ColumnName(columnName, length, tk != null, tk2 != null);
+    }
+}
+
+List<ColumnName> ColumnNames():
+{
+    List<ColumnName> result = new ArrayList<ColumnName>();
+    ColumnName columnName;
+}
+{
+    columnName=ColumnName() { result.add(columnName); }
+    (
+        "," columnName=ColumnName() { result.add(columnName); }
+    )*
+    {
+        return result;
+    }
+}
+
+/*
+TINYINT[(length)] [UNSIGNED] [ZEROFILL]
+  | SMALLINT[(length)] [UNSIGNED] [ZEROFILL]
+  | MEDIUMINT[(length)] [UNSIGNED] [ZEROFILL]
+  | INT[(length)] [UNSIGNED] [ZEROFILL]
+  | INTEGER[(length)] [UNSIGNED] [ZEROFILL]
+  | BIGINT[(length)] [UNSIGNED] [ZEROFILL]
+  | REAL[(length,decimals)] [UNSIGNED] [ZEROFILL]
+  | DOUBLE[(length,decimals)] [UNSIGNED] [ZEROFILL]
+  | FLOAT[(length,decimals)] [UNSIGNED] [ZEROFILL]
+  | DECIMAL(length,decimals) [UNSIGNED] [ZEROFILL]
+  | NUMERIC(length,decimals) [UNSIGNED] [ZEROFILL]
+  | DATE
+  | TIME
+  | TIMESTAMP
+  | DATETIME
+  | CHAR(length) [BINARY | ASCII | UNICODE]
+  | VARCHAR(length) [BINARY]
+  | TINYBLOB
+  | BLOB
+  | MEDIUMBLOB
+  | LONGBLOB
+  | TINYTEXT
+  | TEXT
+  | MEDIUMTEXT
+  | LONGTEXT
+  | ENUM(value1,value2,value3,...)
+  | SET(value1,value2,value3,...)
+    public ColumnType(String name, Integer length, Integer decimals, List<String> values, boolean unsigned, boolean zerofill, boolean binary, boolean ascii, boolean unicode) {
+*/
+
+ColumnType ColumnType():
+{
+    IntegerValue length = null;
+    IntegerValue decimals = null;
+    Token tk = null, tk2 = null, tk3 = null, tk4 = null, tk5 = null, tk6 = null;
+    ValueList valueList = null;
+    String charsetName = null;
+    String collationName = null;
+}
+{
+    (
+        tk=<BIT> ["(" length=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<TINYINT> ["(" length=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<SMALLINT> ["(" length=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<MEDIUMINT> ["(" length=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<INT> ["(" length=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<INTEGER> ["(" length=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<BIGINT> ["(" length=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<REAL> ["(" length=IntValue() "," decimals=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<DOUBLE> ["(" length=IntValue() "," decimals=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<FLOAT> ["(" length=IntValue() "," decimals=IntValue() ")"] [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<DECIMAL> "(" length=IntValue() "," decimals=IntValue() ")" [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<NUMERIC> "(" length=IntValue() "," decimals=IntValue() ")" [tk2=<UNSIGNED>] [tk3=<ZEROFILL>]
+        | tk=<DATE>
+        | tk=<TIME>
+        | tk=<TIMESTAMP>
+        | tk=<DATETIME>
+        | tk=<CHAR> "(" length=IntValue() ")" [tk4=<BINARY>] [tk5=<ASCII>] [tk6=<UNICODE>] [<CHARACTER> <SET> charsetName=Identifier()] [<COLLATE> collationName=Identifier()]
+        | tk=<VARCHAR> "(" length=IntValue() ")" [tk4=<BINARY>] [<CHARACTER> <SET> charsetName=Identifier()] [<COLLATE> collationName=Identifier()]
+        | tk=<TINYBLOB>
+        | tk=<BLOB>
+        | tk=<MEDIUMBLOB>
+        | tk=<LONGBLOB>
+        | tk=<TINYTEXT> [<CHARACTER> <SET> charsetName=Identifier()] [<COLLATE> collationName=Identifier()]
+        | tk=<TEXT> [<CHARACTER> <SET> charsetName=Identifier()] [<COLLATE> collationName=Identifier()]
+        | tk=<MEDIUMTEXT> [<CHARACTER> <SET> charsetName=Identifier()] [<COLLATE> collationName=Identifier()]
+        | tk=<LONGTEXT> [<CHARACTER> <SET> charsetName=Identifier()] [<COLLATE> collationName=Identifier()]
+        | tk=<ENUM> valueList=ValueList() [<CHARACTER> <SET> charsetName=Identifier()] [<COLLATE> collationName=Identifier()]
+        | tk=<SET> valueList=ValueList() [<CHARACTER> <SET> charsetName=Identifier()] [<COLLATE> collationName=Identifier()]
+    )
+    {
+        return new ColumnType(tk.image, length, decimals, valueList, tk2 != null, tk3 != null,
+         tk4 != null, tk5 != null, tk6 != null, charsetName, collationName);
+    }
+}
+
+/*
+reference_definition:
+    REFERENCES tbl_name [(index_col_name,...)]
+               [MATCH FULL | MATCH PARTIAL]
+               [ON DELETE reference_option]
+               [ON UPDATE reference_option]
+
+reference_option:
+    RESTRICT | CASCADE | SET NULL | NO ACTION | SET DEFAULT
+
+ public ColumnReference(String tableName, List<String> columnNames, boolean matchFull, boolean matchPartial, String onDeleteOption, String onUpdateOption) {
+
+ */
+
+ColumnReference ColumnReference():
+{
+    String tableName;
+    List<String> columnNames = null;
+    Token tk = null, tk2 = null;
+    String onDeleteOption = null;
+    String onUpdateOption = null;
+}
+{
+    <REFERENCES> tableName=DbObjectName() ["(" columnNames=DbObjectNames() ")"]
+    [<MATCH> (tk=<FULL> | tk2=<PARTIAL>)]
+    [LOOKAHEAD(2) <ON>
+        (
+            <DELETE> onDeleteOption=ReferenceOption()
+            | <UPDATE> onUpdateOption=ReferenceOption()
+        )
+    ]
+    {
+        return new ColumnReference(tableName, columnNames, tk != null, tk2 != null,
+            onDeleteOption, onUpdateOption);
+    }
+}
+
+String ReferenceOption():
+{
+    Token tk = null, tk2 = null;
+}
+{
+    (
+        tk=<RESTRICT>
+        | tk=<CASCADE>
+        | tk=<NO> tk2=<ACTION>
+        | tk=<SET> (tk2=<NULL> | tk2=<K_DEFAULT>)
+    )
+    {
+        return tk.image + (tk2 != null ? " " + tk2.image : "");
+    }
+}
+
+/*
+  | [CONSTRAINT [symbol]] PRIMARY KEY [index_type] (index_col_name,...)
+  | KEY [index_name] [index_type] (index_col_name,...)
+  | INDEX [index_name] [index_type] (index_col_name,...)
+  | [CONSTRAINT [symbol]] UNIQUE [INDEX]
+        [index_name] [index_type] (index_col_name,...)
+  | [FULLTEXT|SPATIAL] [INDEX] [index_name] (index_col_name,...)
+  | [CONSTRAINT [symbol]] FOREIGN KEY
+        [index_name] (index_col_name,...) [reference_definition]
+  | CHECK (expr)
+
+public ColumnConstraint(boolean constraint, String constraintName, String type, List<ColumnName> indexColumnNames, String indexType, String indexName, ColumnReference columnReference, String checkExpr) {
+
+ */
+
+ColumnConstraint ColumnConstraint():
+{
+    Token tk = null, tk2 = null, tk3 = null, tk4 = null;
+    String constraintName = null;
+    String indexName = null;
+    List<ColumnName> indexColumnNames = null;
+    ColumnReference reference = null;
+    ExpressionValue checkExpr = null;
+}
+{
+    (
+        [tk=<CONSTRAINT> [constraintName=DbObjectName()]]
+            (
+                tk2=<PRIMARY> tk3=<KEY> [<USING> tk4=<S_IDENTIFIER>] "(" indexColumnNames=ColumnNames() ")" [<USING> tk4=<S_IDENTIFIER>]
+                | tk2=<UNIQUE> [tk3=<KEY>] [indexName=DbObjectName()] [<USING> tk4=<S_IDENTIFIER>] "(" indexColumnNames=ColumnNames() ")" [<USING> tk4=<S_IDENTIFIER>]
+                | tk2=<FOREIGN> [tk3=<KEY>] [indexName=DbObjectName()] "(" indexColumnNames=ColumnNames() ")" [reference=ColumnReference()]
+            )
+        | tk2=<KEY> [indexName=DbObjectName()] [<USING> tk4=<S_IDENTIFIER>] "(" indexColumnNames=ColumnNames() ")" [<USING> tk4=<S_IDENTIFIER>]
+        | tk2=<INDEX> [indexName=DbObjectName()] [<USING> tk4=<S_IDENTIFIER>] "(" indexColumnNames=ColumnNames() ")" [<USING> tk4=<S_IDENTIFIER>]
+        | (tk2=<FULLTEXT>|tk2=<SPATIAL>) [tk3=<INDEX>] [indexName=DbObjectName()] "(" indexColumnNames=ColumnNames() ")"
+        | tk2=<CHECK> "(" checkExpr=ExpressionValue() ")"
+    )
+    {
+        return new ColumnConstraint(tk != null, constraintName, (tk2 != null ? tk2.image : "") + (tk3 != null ? " " + tk3.image : ""),
+            indexColumnNames, (tk4 != null ? tk4.image : null), indexName, reference, checkExpr);
+    }
+}
+
+
+Statement DropStatement():
+{
+    Statement st = null;
+}
+{
+    <DROP>
+    (
+        st=DropDatabaseStatement()
+        | st=DropTableStatement()
+    )
+    {
+        return st;
+    }
+}
+
+Statement DropDatabaseStatement():
+{
+    Token tk = null;
+    String dbName;
+}
+{
+	<DATABASE> [tk=<IF> <EXISTS>] dbName=DbObjectName()
+    {
+        return new DropDatabaseStatement(dbName, tk != null);
+    }
+}
+
+Statement DropTableStatement():
+{
+    Token tk = null;
+    Token tk2 = null;
+    List<String> tableNames;
+}
+{
+	[tk=<TEMPORARY>] <TABLE> [tk2=<IF> <EXISTS>] tableNames=DbObjectNames()
+    {
+        return new DropTableStatement(tk != null, tk2 != null, tableNames);
+    }
+}
+
+List<String> DbObjectNames():
+{
+    List<String> result = new ArrayList<String>();
+    String name;
+}
+{
+    name=DbObjectName() { result.add(name); }
+    (
+        "," name=DbObjectName() { result.add(name); }
+    )*
+    {
+        return result;
+    }
+}
+
+String DbObjectName():
+{
+    Token tk = null;
+}
+{
+	(
+	    tk=<S_IDENTIFIER> { return tk.image; }
+	    | tk=<S_QUOTED_IDENTIFIER> { return tk.image; }
+	)
+}
+
+String Identifier():
+{
+    Token tk = null;
+}
+{
+	tk=<S_IDENTIFIER> { return tk.image; }
+}
+
+List<Assignment> Assignments():
+{
+    List<Assignment> assignments = new ArrayList<Assignment>();
+    Assignment assignment;
+}
+{
+    (
+        assignment=Assignment() { assignments.add(assignment); }
+        (
+            LOOKAHEAD(2) "," assignment=Assignment() { assignments.add(assignment); }
+        )*
+    )
+    {
+        return assignments;
+    }
+}
+
+Assignment Assignment():
+{
+	String columnName;
+	Value value;
+}
+{
+	(
+		columnName=DbObjectName() "=" value=Value()
+	)
+    {
+    	return new Assignment(columnName, value);
+    }
+}
+
+List<ValueList> MultiValueList():
+{
+    List<ValueList> result = new ArrayList<ValueList>();
+    ValueList valueList;
+}
+{
+    (
+        valueList=ValueList() { result.add(valueList); }
+        (
+            LOOKAHEAD(2) "," valueList=ValueList() { result.add(valueList); }
+        )*
+    )
+    {
+        return result;
+    }
+}
+
+ValueList ValueList():
+{
+    List<Value> values = new ArrayList<Value>();
+    Value value;
+}
+{
+    (
+    	"("
+        value=Value() { values.add(value); }
+        (
+            LOOKAHEAD(2) "," value=Value() { values.add(value); }
+        )*
+        ")"
+    )
+    {
+        return new ValueList(values);
+    }
+}
+
+Value Value():
+{
+    Value val = null;
+}
+{
+	(
+		val=JdbcPlaceholderValue()
+		| val=IntValue()
+		| val=DoubleValue()
+		| val=StringValue()
+		| val=BinaryValue()
+		| val=NullValue()
+		| val=SystemVariableValue()
+		| val=ExpressionValue()
+	)
+    {
+    	return val;
+    }
+}
+
+StringValue StringValue():
+{
+    Token tk = null;
+}
+{
+    tk=<S_CHAR_LITERAL> { return new StringValue(tk.image); }
+|    tk=<S_QUOTED_IDENTIFIER> { return new StringValue(tk.image); }
+}
+
+BinaryValue BinaryValue():
+{
+    Token tk = null;
+}
+{
+     tk=<S_BINARY_FORMAT1> { return new BinaryValue(BinaryValue.Format.FORMAT1, tk.image.substring(2, tk.image.length() - 1)); }
+|    tk=<S_BINARY_FORMAT2> { return new BinaryValue(BinaryValue.Format.FORMAT2, tk.image.substring(2)); }
+}
+
+IntegerValue IntValue():
+{
+    Token tk = null;
+}
+{
+    tk=<S_INTEGER> { return new IntegerValue(tk.image); }
+}
+
+DoubleValue DoubleValue():
+{
+    Token tk = null;
+}
+{
+    tk=<S_DOUBLE> { return new DoubleValue(tk.image); }
+}
+
+NullValue NullValue():
+{
+    Token tk = null;
+}
+{
+    tk=<NULL> { return new NullValue(); }
+}
+
+JdbcPlaceholderValue JdbcPlaceholderValue():
+{
+    Token tk = null;
+}
+{
+    "?" { return new JdbcPlaceholderValue(); }
+}
+
+SystemVariableValue SystemVariableValue():
+{
+	Token tk = null;
+}
+{
+	tk=<CURRENT_TIMESTAMP> { return new SystemVariableValue(tk.image); }
+}
+
+ExpressionValue ExpressionValue():
+{
+}
+{
+    <TODO> { return new ExpressionValue("TODO"); }
+}
+
