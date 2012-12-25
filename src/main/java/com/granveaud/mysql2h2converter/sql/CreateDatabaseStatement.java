@@ -9,7 +9,15 @@ public class CreateDatabaseStatement implements Statement {
 		this.ifNotExists = ifNotExists;
 	}
 
-	@Override
+    public String getDbName() {
+        return dbName;
+    }
+
+    public boolean isIfNotExists() {
+        return ifNotExists;
+    }
+
+    @Override
 	public String toString() {
 		return "CREATE DATABASE " + (ifNotExists ? "IF NOT EXISTS " : "") + dbName;
 	}

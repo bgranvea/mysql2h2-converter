@@ -7,6 +7,10 @@ public class UseStatement implements Statement {
         this.dbName = dbName;
     }
 
+    public String getDbName() {
+        return dbName;
+    }
+
     @Override
     public String toString() {
         return "USE " + dbName;

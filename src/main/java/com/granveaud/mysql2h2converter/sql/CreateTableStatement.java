@@ -115,6 +115,14 @@ public class CreateTableStatement implements Statement {
         this.options = options;
     }
 
+    public void setOptions(List<CreateTableOption> options) {
+        this.options = options;
+    }
+
+    public void setIfNotExists(boolean ifNotExists) {
+        this.ifNotExists = ifNotExists;
+    }
+
     @Override
     public String toString() {
         return "CREATE" + (temporary ? " TEMPORARY" : "") + " TABLE" + (ifNotExists ? " IF NOT EXISTS" : "") +

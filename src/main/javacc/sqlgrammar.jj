@@ -160,7 +160,7 @@ Statement Statement():
 {
     (
         st=UseStatement()
-        | st=SetStatement()
+        | st=SetVariableStatement()
         | st=CreateStatement()
         | st=DropStatement()
         | st=InsertStatement()
@@ -171,14 +171,14 @@ Statement Statement():
     }
 }
 
-Statement SetStatement():
+Statement SetVariableStatement():
 {
 	Assignment assignment;
 }
 {
 	<SET> assignment=Assignment()
 	{
-		return new SetStatement(assignment);
+		return new SetVariableStatement(assignment);
 	}
 }
 
