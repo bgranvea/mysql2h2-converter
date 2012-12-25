@@ -14,6 +14,14 @@ public class CreateTableDefinition {
         this.constraints = constraints;
     }
 
+    public List<ColumnDefinition> getColumnDefinitions() {
+        return columnDefinitions;
+    }
+
+    public List<ColumnConstraint> getConstraints() {
+        return constraints;
+    }
+
     @Override
     public String toString() {
         return Joiner.on(',').join(Iterables.concat(columnDefinitions, constraints));

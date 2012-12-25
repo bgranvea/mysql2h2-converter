@@ -106,13 +106,16 @@ public class CreateTableStatement implements Statement {
 // TODO
 //    private SelectStatement selectStatement;
 
-
     public CreateTableStatement(boolean temporary, boolean ifNotExists, String tableName, CreateTableDefinition definition, List<CreateTableOption> options) {
         this.temporary = temporary;
         this.ifNotExists = ifNotExists;
         this.tableName = tableName;
         this.definition = definition;
         this.options = options;
+    }
+
+    public CreateTableDefinition getDefinition() {
+        return definition;
     }
 
     public void setOptions(List<CreateTableOption> options) {

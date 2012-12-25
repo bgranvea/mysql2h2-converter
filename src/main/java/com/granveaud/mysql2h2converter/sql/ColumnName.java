@@ -15,6 +15,10 @@ public class ColumnName {
         this.desc = desc;
     }
 
+    public void setLength(IntegerValue length) {
+        this.length = length;
+    }
+
     @Override
     public String toString() {
         return name + (length != null ? "(" + length + ")" : "") + (asc ? " ASC" : "") + (desc ? " DESC" : "");

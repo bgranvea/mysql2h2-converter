@@ -20,6 +20,10 @@ public class BinaryValue implements Value {
         }
     }
 
+    public void setFormat(Format format) {
+        this.format = format;
+    }
+
     public byte[] getValue() {
         return value;
     }

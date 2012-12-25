@@ -37,6 +37,18 @@ public class ColumnConstraint {
         this.checkExpr = checkExpr;
     }
 
+    public String getIndexName() {
+        return indexName;
+    }
+
+    public void setIndexName(String indexName) {
+        this.indexName = indexName;
+    }
+
+    public List<ColumnName> getIndexColumnNames() {
+        return indexColumnNames;
+    }
+
     @Override
     public String toString() {
         return (constraint ? "CONSTRAINT " : "") +

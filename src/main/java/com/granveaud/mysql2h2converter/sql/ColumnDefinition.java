@@ -28,6 +28,10 @@ public class ColumnDefinition {
         this.columnReference = columnReference;
     }
 
+    public ColumnType getColumnType() {
+        return columnType;
+    }
+
     @Override
     public String toString() {
         return columnName.toString() + " " + columnType +

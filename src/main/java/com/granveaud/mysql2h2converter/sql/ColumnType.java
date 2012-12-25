@@ -51,7 +51,27 @@ public class ColumnType {
 		this.collationName = collationName;
 	}
 
-	@Override
+    public String getCharsetName() {
+        return charsetName;
+    }
+
+    public void setCharsetName(String charsetName) {
+        this.charsetName = charsetName;
+    }
+
+    public String getCollationName() {
+        return collationName;
+    }
+
+    public void setCollationName(String collationName) {
+        this.collationName = collationName;
+    }
+
+    public void setLength(IntegerValue length) {
+        this.length = length;
+    }
+
+    @Override
     public String toString() {
         return name + (length != null ? "(" + length + (decimals != null ? "," + decimals : "") + ")" : "") +
                 (valueList != null ? valueList : "") +

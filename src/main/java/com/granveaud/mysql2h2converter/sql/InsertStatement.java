@@ -50,8 +50,11 @@ public class InsertStatement implements Statement {
 		this.onDuplicateKeyUpdateAssignments = onDuplicateKeyUpdateAssignments;
 	}
 
-	@Override
+    public List<ValueList> getValues() {
+        return values;
+    }
 
+    @Override
     public String toString() {
         return "INSERT" + (lowPriority ? " LOW_PRIORITY" : "") + (highPriority ? " HIGH_PRIORITY" : "") + (delayed ? " DELAYED" : "") + (ignore ? " IGNORE" : "") + (into ? " INTO" : "") +
 				" " + tableName +

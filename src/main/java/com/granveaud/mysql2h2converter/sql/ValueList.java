@@ -11,7 +11,11 @@ public class ValueList {
 		this.values = values;
 	}
 
-	@Override
+    public List<Value> getValues() {
+        return values;
+    }
+
+    @Override
 	public String toString() {
 		return "(" + Joiner.on(',').join(values) + ")";
 	}
