@@ -37,6 +37,10 @@ public class ColumnConstraint {
         this.checkExpr = checkExpr;
     }
 
+    public String getType() {
+        return type;
+    }
+
     public String getIndexName() {
         return indexName;
     }
@@ -49,13 +53,17 @@ public class ColumnConstraint {
         return indexColumnNames;
     }
 
+    public void setIndexType(String indexType) {
+        this.indexType = indexType;
+    }
+
     @Override
     public String toString() {
         return (constraint ? "CONSTRAINT " : "") +
                 (constraintName != null ? constraintName + " " : "") +
                 type +
                 (indexName != null ? " " + indexName : "") +
-                (indexType != null ? " " + indexType : "") +
+                (indexType != null ? " USING " + indexType : "") +
                 (indexColumnNames != null ? " (" + Joiner.on(',').join(indexColumnNames) + ")" : "") +
                 (columnReference != null ? " " + columnReference : "") +
                 (checkExpr != null ? " " + checkExpr : "");

@@ -14,6 +14,7 @@ public class H2Converter {
         Map<String, Integer> indexNameOccurrences = new HashMap<String, Integer>();
 
         List<Statement> result = new ArrayList<Statement>();
+        List<Statement> delayedStatements = new ArrayList<Statement>();
         for (Statement st : statements) {
             if (st instanceof EmptyStatement) {
                 // ignore empty statements
@@ -38,11 +39,15 @@ public class H2Converter {
                 // handle duplicate index names in KEY
                 handleCreateTableDuplicateIndexNames(createStatement, indexNameOccurrences);
 
-                // handle CHARACTER SET and COLLATION column definition
+                // handle CHARACTER SET and COLLATION column definition, remove ON UPDATE
                 handleCreateTableColumnDefinitions(createStatement);
 
                 // handle KEY (colName(length))
                 handleCreateTableKeyColumnNameLength(createStatement);
+
+                // 1) handle when foreign key check is disabled: add foreign key constraints at the end
+                // 2) remove USING indexType
+                handleCreateTableConstraints(createStatement, delayedStatements);
 
                 result.add(st);
 
@@ -62,22 +67,41 @@ public class H2Converter {
             }
         }
 
+        result.addAll(delayedStatements);
+
         return result;
     }
 
     private void handleCreateTableDuplicateIndexNames(CreateTableStatement createStatement, Map<String, Integer> indexNameOccurrences) {
         for (ColumnConstraint constraint : createStatement.getDefinition().getConstraints()) {
             if (constraint.getIndexName() != null) {
-                String indexName = DbUtils.unescapeDbObjectName(constraint.getIndexName());
+                String indexName = DbUtils.unescapeDbObjectName(constraint.getIndexName()).toUpperCase();
 
-                int occurrence = indexNameOccurrences.containsKey(indexName) ? indexNameOccurrences.get(indexName) : 0;
+                Integer occurrence = indexNameOccurrences.get(indexName);
+                if (occurrence != null) {
+                    // replace with unique name
+                    constraint.setIndexName(indexName + "_" + occurrence);
 
-                // increment occurrence for next time
-                indexNameOccurrences.put(indexName, occurrence + 1);
-
-                // replace with unique name
-                constraint.setIndexName(indexName + "_" + occurrence);
+                    // increment occurrence for next time
+                    indexNameOccurrences.put(indexName, occurrence + 1);
+                } else {
+                    indexNameOccurrences.put(indexName, 1);
+                }
             }
+        }
+    }
+
+    private void handleCreateTableConstraints(CreateTableStatement createStatement, List<Statement> delayedStatements) {
+        Iterator<ColumnConstraint> it = createStatement.getDefinition().getConstraints().iterator();
+        while (it.hasNext()) {
+            ColumnConstraint constraint = it.next();
+
+            if (constraint.getType().equals("FOREIGN KEY")) {
+                delayedStatements.add(new AlterTableStatement(false, createStatement.getTableName(), "ADD", constraint));
+                it.remove();
+            }
+
+            constraint.setIndexType(null);
         }
     }
 
@@ -85,6 +109,7 @@ public class H2Converter {
         for (ColumnDefinition def : createTableStatement.getDefinition().getColumnDefinitions()) {
             def.getColumnType().setCharsetName(null);
             def.getColumnType().setCollationName(null);
+            def.setUpdateValue(null);
         }
     }
 

@@ -23,10 +23,10 @@ public class ConverterTest {
         Connection conn = DriverManager.getConnection("jdbc:h2:mem:test;MODE=MySQL");
 
 		for (String s : new String[] {
-				"/scripts/wordpress.sql", "/scripts/drupal.sql"
+				"wordpress.sql", "drupal.sql"
 		}) {
             LOGGER.info("Loading script " + s);
-			List<Statement> statements = SQLParserManager.parse(new InputStreamReader(getClass().getResourceAsStream(s)));
+			List<Statement> statements = SQLParserManager.parse(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s)));
 
             LOGGER.info("Conversion");
             List<Statement> h2Statements = new H2Converter().convertScript(statements);

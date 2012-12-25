@@ -114,6 +114,10 @@ public class CreateTableStatement implements Statement {
         this.options = options;
     }
 
+    public String getTableName() {
+        return tableName;
+    }
+
     public CreateTableDefinition getDefinition() {
         return definition;
     }
