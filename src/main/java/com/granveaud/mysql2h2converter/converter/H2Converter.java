@@ -114,7 +114,10 @@ public class H2Converter {
     private void handleCreateTableKeyColumnNameLength(CreateTableStatement createTableStatement) {
         for (ColumnConstraint constraint : createTableStatement.getDefinition().getConstraints()) {
             for (ColumnName columnName : constraint.getIndexColumnNames()) {
-                columnName.setLength(null);
+				if (columnName.getLength() != null) {
+					LOGGER.warn("Remove length value in key/index column name");
+                	columnName.setLength(null);
+				}
             }
         }
     }
@@ -126,12 +129,21 @@ public class H2Converter {
                 if (value instanceof StringValue && "'0000-00-00 00:00:00'".equals(value.toString())) {
                     // replace '0000-00-00 00:00:00' datetime value
                     // TODO: this is not correct because '0000-00-00 00:00:00' could be a real string value
-                    LOGGER.warn("Replace '0000-00-00 00:00:00' with valid H2 datetime");
+                    LOGGER.warn("Replace '0000-00-00 00:00:00' with valid H2 datetime (unsafe replacement)");
                     valueList.getValues().set(i, new StringValue("'0001-01-01 00:00:00'"));
                 } else if (value instanceof BinaryValue) {
                     // be sure to use X'hex' format
                     ((BinaryValue) value).setFormat(BinaryValue.Format.FORMAT1);
-                }
+                } else if (value instanceof BitFieldValue) {
+					BitFieldValue bitFieldValue = (BitFieldValue) value;
+					if (bitFieldValue.getBits().equals("1")) {
+						valueList.getValues().set(i, new BooleanValue(true));
+					} else if (bitFieldValue.getBits().equals("0")) {
+						valueList.getValues().set(i, new BooleanValue(false));
+					} else {
+						LOGGER.warn("Don't know how to convert BitFieldValue " + bitFieldValue.getBits() + " for H2");
+					}
+				}
             }
         }
     }

@@ -97,7 +97,6 @@ public class BasicTest {
 		assertStatementEquals(str);
 
 		str = "INSERT INTO t1 VALUES (\"this is a test test2 \\\" \t\n \\\" test3 \\'\",\"test4\",\"this is a test '' test5 \\' '' \\' test6 \\\\\",\"test7\")";
-		System.out.println("STR=" + str);
 		assertStatementEquals(str);
 	}
 }
