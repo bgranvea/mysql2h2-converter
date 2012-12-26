@@ -28,7 +28,7 @@ public class ConverterTest {
 		sqlStat2.close();
 
 		for (String s : new String[] {
-				"wordpress.sql", "drupal.sql"
+				"wordpress.sql", "drupal.sql", "xwiki.sql", "xwiki-no-foreign-key-checks.sql"
 		}) {
             LOGGER.info("Loading script " + s);
 			List<Statement> statements = SQLParserManager.parse(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s)));

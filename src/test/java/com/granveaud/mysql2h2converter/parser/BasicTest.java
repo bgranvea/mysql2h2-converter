@@ -67,14 +67,33 @@ public class BasicTest {
         assertStatementEquals(str);
     }
 
+	@Test
+	public void testAlterTable() throws Exception {
+		String str = "ALTER TABLE test ADD CONSTRAINT c1 FOREIGN KEY (f1) REFERENCES test2 (t2)";
+		assertStatementEquals(str);
+	}
+
+	@Test
+	public void testLockUnlockTables() throws Exception {
+		String str = "LOCK TABLES t1 AS t1 READ LOCAL";
+		assertStatementEquals(str);
+
+		str = "LOCK TABLES t1 AS t1 LOW_PRIORITY WRITE";
+		assertStatementEquals(str);
+
+		str = "UNLOCK TABLES";
+		assertStatementEquals(str);
+	}
+
     @Test
     public void testInsert() throws Exception {
-        String str = "INSERT INTO test VALUES (1,'test',5.0),(2,'test',6.0),(0x036072ff,'test',X'036072ff')";
+        String str = "INSERT INTO test VALUES (1,'test',5.0,b'101010'),(2,'test',6.0,b'101010'),(0x036072ff,'test',X'036072ff',0b101010)";
         assertStatementEquals(str);
     }
 
     @Test
 	public void testCharLiteralEscaping() throws Exception {
+		/*
         String str = "SET SQL_MODE='this is a test '' test2 \\' '' \\' test3'";
         assertStatementEquals(str);
 
@@ -86,5 +105,9 @@ public class BasicTest {
 
         str = "SET SQL_MODE=\"this is a test \\\" ''' test2 \\' test3 \\\"";
         assertStatementEquals(str);
+                             */
+		// from xwiki
+		String str = "INSERT INTO test VALUES ('test \\'','test')";
+		assertStatementEquals(str);
 	}
 }

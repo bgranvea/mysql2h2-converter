@@ -1,13 +1,15 @@
 package com.granveaud.mysql2h2converter.sql;
 
+import java.math.BigInteger;
+
 public class IntegerValue implements Value {
-	private Integer value;
+	private BigInteger value;
 
 	public IntegerValue(String str) {
-		value = Integer.parseInt(str);
+		value = new BigInteger(str);
 	}
 
-	public Integer getValue() {
+	public BigInteger getValue() {
 		return value;
 	}
 

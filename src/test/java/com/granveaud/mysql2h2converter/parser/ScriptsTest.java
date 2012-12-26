@@ -17,10 +17,10 @@ public class ScriptsTest {
     @Test
     public void testScripts() throws Exception {
         for (String s : new String[]{
-                "/scripts/wordpress.sql", "/scripts/drupal.sql"
+                "wordpress.sql", "drupal.sql", /*"xwiki.sql",*/ "xwiki-no-foreign-key-checks.sql"
         }) {
             LOGGER.info("Loading script " + s);
-            List<Statement> statements = SQLParserManager.parse(new InputStreamReader(getClass().getResourceAsStream(s)));
+            List<Statement> statements = SQLParserManager.parse(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s)));
             assertTrue(!statements.isEmpty());
         }
     }

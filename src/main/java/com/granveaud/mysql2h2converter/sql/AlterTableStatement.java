@@ -43,19 +43,16 @@ alter_specification:
 public class AlterTableStatement implements Statement {
     private boolean ignore;
     private String tableName;
-    private String operation; // ADD...
-    private ColumnConstraint constraint;
+	private List<AlterTableSpecification> specifications;
 
-    public AlterTableStatement(boolean ignore, String tableName, String operation, ColumnConstraint constraint) {
-        this.ignore = ignore;
-        this.tableName = tableName;
-        this.operation = operation;
-        this.constraint = constraint;
-    }
+	public AlterTableStatement(boolean ignore, String tableName, List<AlterTableSpecification> specifications) {
+		this.ignore = ignore;
+		this.tableName = tableName;
+		this.specifications = specifications;
+	}
 
-    @Override
+	@Override
     public String toString() {
-        return "ALTER" + (ignore ? " IGNORE" : "") + " TABLE " + tableName + " " + operation +
-                (constraint != null ? " " + constraint : "");
+        return "ALTER" + (ignore ? " IGNORE" : "") + " TABLE " + tableName + " " + Joiner.on(',').join(specifications);
     }
 }

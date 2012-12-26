@@ -18,8 +18,10 @@ public class H2Converter {
         for (Statement st : statements) {
             if (st instanceof EmptyStatement) {
                 // ignore empty statements
-            } else if (st instanceof SetVariableStatement) {
-                // do not copy, SET statement are usually MySQL specific
+			} else if (st instanceof LockTablesStatement || st instanceof UnlockTablesStatement) {
+				// do not copy, MySQL specific
+			} else if (st instanceof SetVariableStatement) {
+				// do not copy, SET statement are usually MySQL specific
             } else if (st instanceof UseStatement) {
                  // USE dbName => SET SCHEMA dbName
                 UseStatement useStatement = (UseStatement) st;
@@ -93,7 +95,7 @@ public class H2Converter {
             ColumnConstraint constraint = it.next();
 
             if (constraint.getType().equals("FOREIGN KEY")) {
-                delayedStatements.add(new AlterTableStatement(false, createStatement.getTableName(), "ADD", constraint));
+                delayedStatements.add(new AlterTableStatement(false, createStatement.getTableName(), Arrays.asList(new AlterTableSpecification("ADD", constraint))));
                 it.remove();
             }
 
