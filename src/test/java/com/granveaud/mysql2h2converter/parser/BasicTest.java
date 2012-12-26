@@ -93,21 +93,11 @@ public class BasicTest {
 
     @Test
 	public void testCharLiteralEscaping() throws Exception {
-		/*
-        String str = "SET SQL_MODE='this is a test '' test2 \\' '' \\' test3'";
-        assertStatementEquals(str);
+		String str = "INSERT INTO t1 VALUES ('this is a test '' test2 \\' \t\n'' \\' test3 \\'','test4','this is a test '' test5 \\' '' \\' test6 \\\\','test7')";
+		assertStatementEquals(str);
 
-        str = "SET SQL_MODE='this is a test '' test2 \\' '' \\' test3 \\'";
-        assertStatementEquals(str);
-
-        str = "SET SQL_MODE=\"this is a test \\\" ''' test2 \\' test3\"";
-        assertStatementEquals(str);
-
-        str = "SET SQL_MODE=\"this is a test \\\" ''' test2 \\' test3 \\\"";
-        assertStatementEquals(str);
-                             */
-		// from xwiki
-		String str = "INSERT INTO test VALUES ('test \\'','test')";
+		str = "INSERT INTO t1 VALUES (\"this is a test test2 \\\" \t\n \\\" test3 \\'\",\"test4\",\"this is a test '' test5 \\' '' \\' test6 \\\\\",\"test7\")";
+		System.out.println("STR=" + str);
 		assertStatementEquals(str);
 	}
 }

@@ -2,7 +2,8 @@ options{
     STATIC=false;
     IGNORE_CASE=true;
 	UNICODE_INPUT=true;
-	DEBUG_TOKEN_MANAGER = true;
+//	USER_CHAR_STREAM=false;
+//	DEBUG_TOKEN_MANAGER = true;
 //  DEBUG_LOOKAHEAD= true ;
 }
 
@@ -137,14 +138,78 @@ TOKEN:
 				|
 				(<S_INTEGER>)+ (".")? ["e","E"] (["-","+"])? (<S_INTEGER>)+
 				)>
-|   <S_CHAR_LITERAL: <S_CHAR_SINGLE_QUOTE_LITERAL> | <S_CHAR_DOUBLE_QUOTE_LITERAL>>
-|   <#S_CHAR_SINGLE_QUOTE_LITERAL: "'" ( (~["'"])* ("'" "'")? ("\\" "'")? )* "'">
-|   <#S_CHAR_DOUBLE_QUOTE_LITERAL: "\"" ( (~["\""])* ("\\" "\"")? )* "\"">
 |   <S_BINARY_FORMAT1: "X" "'" (<S_HEX_DIGIT>)+ "'">
 |   <S_BINARY_FORMAT2: "0" "x" (<S_HEX_DIGIT>)+>
 |   <#S_HEX_DIGIT: ["a"-"f", "A"-"F", "0"-"9"]>
 |   <S_BIT_FORMAT1: "b" "'" (["0", "1"])+ "'">
 |   <S_BIT_FORMAT2: "0" "b" (["0", "1"])+>
+}
+
+/*
+ * S_CHAR_LITERAL token. Handle '...' and "..." strings with \' and \" escaping.
+ * Use CharLiteral which handles '' escaping by concatening several S_CHAR_LITERAL
+ */
+MORE:
+{
+	"'": IN_SINGLE_QUOTE_LITERAL
+|	"\"": IN_DOUBLE_QUOTE_LITERAL
+}
+
+<IN_SINGLE_QUOTE_LITERAL>
+MORE:
+{
+	"\\": IN_SINGLE_QUOTE_ESCAPE_LITERAL
+}
+
+<IN_DOUBLE_QUOTE_LITERAL>
+MORE:
+{
+	"\\": IN_DOUBLE_QUOTE_ESCAPE_LITERAL
+}
+
+<IN_SINGLE_QUOTE_LITERAL>
+TOKEN:
+{
+	<S_CHAR_SINGLE_QUOTE_LITERAL: "'">: DEFAULT
+}
+
+<IN_DOUBLE_QUOTE_LITERAL>
+TOKEN:
+{
+	<S_CHAR_DOUBLE_QUOTE_LITERAL: "\"">: DEFAULT
+}
+
+<IN_SINGLE_QUOTE_ESCAPE_LITERAL, IN_SINGLE_QUOTE_LITERAL>
+MORE:
+{
+	<~[]>: IN_SINGLE_QUOTE_LITERAL
+}
+
+<IN_DOUBLE_QUOTE_ESCAPE_LITERAL, IN_DOUBLE_QUOTE_LITERAL>
+MORE:
+{
+	<~[]>: IN_DOUBLE_QUOTE_LITERAL
+}
+
+Token CharLiteral():
+{
+	StringBuilder sb = new StringBuilder();
+	Token tk;
+}
+{
+	(
+		(
+			tk=<S_CHAR_SINGLE_QUOTE_LITERAL> { sb.append(tk.image); }
+			(
+				tk=<S_CHAR_SINGLE_QUOTE_LITERAL> { sb.append(tk.image); }
+			)*
+		)
+		| tk=<S_CHAR_DOUBLE_QUOTE_LITERAL> { sb.append(tk.image); }
+		| tk=<S_QUOTED_IDENTIFIER> { sb.append(tk.image); }
+    )
+    {
+        return new Token(tk.kind, sb.toString());
+    }
 }
 
 // parse entire script
@@ -395,9 +460,9 @@ CreateTableOption CreateTableOption():
 }
 {
     (tk1=<S_IDENTIFIER>|tk1=<K_DEFAULT>|tk1=<COMMENT>|tk1=<AUTO_INCREMENT>)
-    ["=" (tk2=<S_IDENTIFIER>|tk2=<S_CHAR_LITERAL>|tk2=<S_INTEGER>)]
+    ["=" (tk2=<S_IDENTIFIER>|tk2=CharLiteral()|tk2=<S_INTEGER>)]
     {
-        return new CreateTableOption(tk1.image, (tk2 != null ? tk2.image : null));
+        return new CreateTableOption(tk1.image, tk2 != null ? tk2.image : null);
     }
 }
 
@@ -882,8 +947,7 @@ StringValue StringValue():
     Token tk = null;
 }
 {
-    tk=<S_CHAR_LITERAL> { return new StringValue(tk.image); }
-|    tk=<S_QUOTED_IDENTIFIER> { return new StringValue(tk.image); }
+    tk=CharLiteral() { return new StringValue(tk.image); }
 }
 
 BinaryValue BinaryValue():
