@@ -36,13 +36,13 @@ public class H2Converter {
                 // ignore MySQL create table specific options
                 createStatement.setOptions(null);
 
-                // handle duplicate index names in KEY
-                handleCreateTableDuplicateIndexNames(createStatement, indexNameOccurrences);
+                // handle duplicate index names in KEY and index names conflicting with reserved keywords
+                handleCreateTableIndexNames(createStatement, indexNameOccurrences);
 
                 // handle CHARACTER SET and COLLATION column definition, remove ON UPDATE
                 handleCreateTableColumnDefinitions(createStatement);
 
-                // handle KEY (colName(length))
+                // handle KEY (colName(length)): length cannot be specified with H2
                 handleCreateTableKeyColumnNameLength(createStatement);
 
                 // 1) handle when foreign key check is disabled: add foreign key constraints at the end
@@ -72,21 +72,17 @@ public class H2Converter {
         return result;
     }
 
-    private void handleCreateTableDuplicateIndexNames(CreateTableStatement createStatement, Map<String, Integer> indexNameOccurrences) {
+    private void handleCreateTableIndexNames(CreateTableStatement createStatement, Map<String, Integer> indexNameOccurrences) {
         for (ColumnConstraint constraint : createStatement.getDefinition().getConstraints()) {
             if (constraint.getIndexName() != null) {
                 String indexName = DbUtils.unescapeDbObjectName(constraint.getIndexName()).toUpperCase();
 
-                Integer occurrence = indexNameOccurrences.get(indexName);
-                if (occurrence != null) {
-                    // replace with unique name
-                    constraint.setIndexName(indexName + "_" + occurrence);
+				// replace with unique name
+                Integer occurrence = indexNameOccurrences.containsKey(indexName) ? indexNameOccurrences.get(indexName) : 0;
+                constraint.setIndexName(indexName + "_" + occurrence);
 
-                    // increment occurrence for next time
-                    indexNameOccurrences.put(indexName, occurrence + 1);
-                } else {
-                    indexNameOccurrences.put(indexName, 1);
-                }
+				// increment occurrence for next time
+				indexNameOccurrences.put(indexName, occurrence + 1);
             }
         }
     }
