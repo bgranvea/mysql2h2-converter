@@ -9,7 +9,6 @@ import java.util.*;
 public class H2Converter {
     final static private Logger LOGGER = LoggerFactory.getLogger(H2Converter.class);
 
-
     public List<Statement> convertScript(List<Statement> statements) {
         Map<String, Integer> indexNameOccurrences = new HashMap<String, Integer>();
 
@@ -22,6 +21,13 @@ public class H2Converter {
 				// do not copy, MySQL specific
 			} else if (st instanceof SetVariableStatement) {
 				// do not copy, SET statement are usually MySQL specific
+			} else if (st instanceof StartTransactionStatement) {
+				// replace with H2 equivalent
+				result.add(new SetStatement("AUTOCOMMIT", Arrays.<Value>asList(new ExpressionValue("OFF"))));
+			} else if (st instanceof CommitTransactionStatement) {
+				// replace with H2 equivalent
+				result.add(new CommitTransactionStatement());
+				result.add(new SetStatement("AUTOCOMMIT", Arrays.<Value>asList(new ExpressionValue("ON"))));
             } else if (st instanceof UseStatement) {
                  // USE dbName => SET SCHEMA dbName
                 UseStatement useStatement = (UseStatement) st;
@@ -126,11 +132,20 @@ public class H2Converter {
         for (ValueList valueList : insertStatement.getValues()) {
             for (int i = 0; i < valueList.getValues().size(); i++) {
                 Value value = valueList.getValues().get(i);
-                if (value instanceof StringValue && "'0000-00-00 00:00:00'".equals(value.toString())) {
-                    // replace '0000-00-00 00:00:00' datetime value
-                    // TODO: this is not correct because '0000-00-00 00:00:00' could be a real string value
-                    LOGGER.warn("Replace '0000-00-00 00:00:00' with valid H2 datetime (unsafe replacement)");
-                    valueList.getValues().set(i, new StringValue("'0001-01-01 00:00:00'"));
+                if (value instanceof StringValue) {
+					StringValue strValue = (StringValue) value;
+				    if (strValue.getValue().equals("'0000-00-00 00:00:00'")) {
+                    	// replace '0000-00-00 00:00:00' datetime value
+                    	// TODO: this is not correct because '0000-00-00 00:00:00' could be a real string value
+                    	LOGGER.warn("Replace '0000-00-00 00:00:00' with valid H2 datetime (unsafe replacement)");
+						value = new StringValue("'0001-01-01 00:00:00'");
+					} else if (strValue.getValue().contains("\\")) {
+						// handle \n, \' ...
+						value = DbUtils.transformStringValue(strValue.getValue());
+					}
+
+					valueList.getValues().set(i, value);
+
                 } else if (value instanceof BinaryValue) {
                     // be sure to use X'hex' format
                     ((BinaryValue) value).setFormat(BinaryValue.Format.FORMAT1);

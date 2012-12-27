@@ -124,6 +124,9 @@ TOKEN:
 |	<LOCAL: "LOCAL">
 |	<WRITE: "WRITE">
 |	<UNLOCK: "UNLOCK">
+|	<START: "START">
+|	<TRANSACTION: "TRANSACTION">
+|	<COMMIT: "COMMIT">
 }
 
 TOKEN:
@@ -243,6 +246,8 @@ Statement Statement():
         | st=InsertStatement()
         | st=LockTablesStatement()
         | st=UnlockTablesStatement()
+        | st=StartTransactionStatement()
+        | st=CommitTransactionStatement()
         | { st=new EmptyStatement(); }
     )
     {
@@ -817,6 +822,26 @@ Statement UnlockTablesStatement():
 	(<UNLOCK> <TABLES>)
 	{
 		return new UnlockTablesStatement();
+    }
+}
+
+Statement StartTransactionStatement():
+{
+}
+{
+	(<START> <TRANSACTION>)
+	{
+		return new StartTransactionStatement();
+    }
+}
+
+Statement CommitTransactionStatement():
+{
+}
+{
+	<COMMIT>
+	{
+		return new CommitTransactionStatement();
     }
 }
 

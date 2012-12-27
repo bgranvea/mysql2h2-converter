@@ -1,0 +1,5 @@
+- release a first version in a Maven repository
+- profile conversion, replace CharLiteral() with a JAVACODE method?
+- split in 3 Maven modules: parser, converter, samples
+- generate an executable JAR to convert scripts
+- read and convert script line by line
