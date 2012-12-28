@@ -1,5 +1,6 @@
 package com.granveaud.mysql2h2converter.parser;
 
+import com.google.common.collect.Lists;
 import com.granveaud.mysql2h2converter.sql.Statement;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -20,8 +21,13 @@ public class ScriptsTest {
                 "wordpress.sql", "drupal.sql", "xwiki.sql", "xwiki-no-foreign-key-checks.sql", "xwiki-sqlyog.sql"
         }) {
             LOGGER.info("Loading script " + s);
-            List<Statement> statements = SQLParserManager.parse(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s)));
+            List<Statement> statements = Lists.newArrayList(SQLParserManager.parseScript(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s))));
             assertTrue(!statements.isEmpty());
         }
+    }
+
+    @Test
+    public void loadLineByLineTest() throws Exception {
+
     }
 }

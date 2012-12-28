@@ -11,10 +11,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -83,14 +80,13 @@ public class ConverterTest {
 	}
 
 	private void executeScript(Reader reader) throws SQLException, ParseException {
-		List<Statement> statements = SQLParserManager.parse(reader);
+		Iterator<Statement> sourceIterator = SQLParserManager.parseScript(reader);
 
-		// conversion
-		List<Statement> h2Statements = new H2Converter().convertScript(statements);
-
-		// load in H2
-		for (Statement stat : h2Statements) {
-			executeUpdate(stat.toString());
+		// conversion and execution
+        Iterator<Statement> it = H2Converter.convertScript(sourceIterator);
+        while (it.hasNext()) {
+            Statement st = it.next();
+			executeUpdate(st.toString());
 		}
 	}
 
@@ -118,7 +114,7 @@ public class ConverterTest {
 	@Test
 	public void testScriptConversion() throws Exception {
 		for (String s : new String[] {
-				"wordpress.sql", "drupal.sql", "xwiki.sql", "xwiki-no-foreign-key-checks.sql", "xwiki-sqlyog.sql"
+				/*"wordpress.sql", "drupal.sql", "xwiki.sql",*/ "xwiki-no-foreign-key-checks.sql", "xwiki-sqlyog.sql"
 		}) {
 			LOGGER.info("Executing script " + s);
 			executeScript(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s)));

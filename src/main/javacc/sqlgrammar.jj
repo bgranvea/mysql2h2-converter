@@ -215,23 +215,17 @@ Token CharLiteral():
     }
 }
 
-// parse entire script
-List<Statement> Script():
+// parse one statement in a script (terminated by ';')
+Statement ScriptStatement():
 {
-    List<Statement> stList = new ArrayList<Statement>();
     Statement st = null;
 }
 {
-  (
-    st=Statement() ";" { stList.add(st); }
-  )*
-  <EOF>
-  {
-    return stList;
-  }
+    (st=Statement() ";") { return st; }
+    | <EOF> { return null; }
 }
 
-// parse one statement
+// parse one statement (without trailing ';')
 Statement Statement():
 {
     Statement st = null;
