@@ -111,15 +111,35 @@ public class ConverterTest {
 		assertEquals(result.get(0).get("STR2"), strResult2);
 	}
 
-	@Test
-	public void testScriptConversion() throws Exception {
-		for (String s : new String[] {
-				/*"wordpress.sql", "drupal.sql", "xwiki.sql",*/ "xwiki-no-foreign-key-checks.sql", "xwiki-sqlyog.sql"
-		}) {
-			LOGGER.info("Executing script " + s);
-			executeScript(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s)));
+    @Test
+    public void testScript1() throws Exception {
+        loadScript("wordpress.sql");
+    }
 
-			LOGGER.info("Done");
-		}
+    @Test
+    public void testScript2() throws Exception {
+        loadScript("drupal.sql");
+    }
+
+    @Test
+    public void testScript3() throws Exception {
+        loadScript("xwiki.sql");
+    }
+
+    @Test
+    public void testScript4() throws Exception {
+        loadScript("xwiki-no-foreign-key-checks.sql");
+    }
+
+    @Test
+    public void testScript5() throws Exception {
+        loadScript("xwiki-sqlyog.sql");
+    }
+
+    private void loadScript(String s) throws Exception {
+        LOGGER.info("Executing script " + s);
+        executeScript(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s)));
+
+        LOGGER.info("Done");
     }
 }

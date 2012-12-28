@@ -25,9 +25,4 @@ public class ScriptsTest {
             assertTrue(!statements.isEmpty());
         }
     }
-
-    @Test
-    public void loadLineByLineTest() throws Exception {
-
-    }
 }
