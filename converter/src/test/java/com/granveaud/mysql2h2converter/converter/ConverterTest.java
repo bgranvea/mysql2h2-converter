@@ -137,9 +137,11 @@ public class ConverterTest {
     }
 
     private void loadScript(String s) throws Exception {
+        long time0 = System.currentTimeMillis();
+
         LOGGER.info("Executing script " + s);
         executeScript(new InputStreamReader(getClass().getResourceAsStream("/scripts/" + s)));
 
-        LOGGER.info("Done");
+        LOGGER.info("Done in " + (System.currentTimeMillis() - time0) + "ms");
     }
 }

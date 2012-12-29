@@ -12,6 +12,7 @@ PARSER_BEGIN(SQLParser)
 package com.granveaud.mysql2h2converter.parser;
 
 import java.util.*;
+import java.io.*;
 import com.granveaud.mysql2h2converter.sql.*;
 
 public class SQLParser {
@@ -132,7 +133,8 @@ TOKEN:
 TOKEN:
 {
 	<S_IDENTIFIER: (<S_LETTER>)+ (<S_DIGIT> | <S_LETTER> | <S_SPECIAL_CHARS>)*>
-|   <S_QUOTED_IDENTIFIER: "\"" <S_IDENTIFIER> "\"" | ("`" <S_IDENTIFIER> "`")>
+//|   <S_QUOTED_IDENTIFIER: "\"" <S_IDENTIFIER> "\"" | ("`" <S_IDENTIFIER> "`")>
+|   <S_QUOTED_IDENTIFIER: "`" <S_IDENTIFIER> "`">
 | 	<#S_LETTER: ["a"-"z", "A"-"Z", "_"]>
 | 	<#S_DIGIT: ["0"-"9"]>
 |   <#S_SPECIAL_CHARS: "$" | "_">
@@ -148,70 +150,44 @@ TOKEN:
 |   <S_BIT_FORMAT2: "0" "b" (["0", "1"])+>
 }
 
-/*
- * S_CHAR_LITERAL token. Handle '...' and "..." strings with \' and \" escaping.
- * Use CharLiteral which handles '' escaping by concatening several S_CHAR_LITERAL
- */
-MORE:
-{
-	"'": IN_SINGLE_QUOTE_LITERAL
-|	"\"": IN_DOUBLE_QUOTE_LITERAL
-}
-
-<IN_SINGLE_QUOTE_LITERAL>
-MORE:
-{
-	"\\": IN_SINGLE_QUOTE_ESCAPE_LITERAL
-}
-
-<IN_DOUBLE_QUOTE_LITERAL>
-MORE:
-{
-	"\\": IN_DOUBLE_QUOTE_ESCAPE_LITERAL
-}
-
-<IN_SINGLE_QUOTE_LITERAL>
-TOKEN:
-{
-	<S_CHAR_SINGLE_QUOTE_LITERAL: "'">: DEFAULT
-}
-
-<IN_DOUBLE_QUOTE_LITERAL>
-TOKEN:
-{
-	<S_CHAR_DOUBLE_QUOTE_LITERAL: "\"">: DEFAULT
-}
-
-<IN_SINGLE_QUOTE_ESCAPE_LITERAL, IN_SINGLE_QUOTE_LITERAL>
-MORE:
-{
-	<~[]>: IN_SINGLE_QUOTE_LITERAL
-}
-
-<IN_DOUBLE_QUOTE_ESCAPE_LITERAL, IN_DOUBLE_QUOTE_LITERAL>
-MORE:
-{
-	<~[]>: IN_DOUBLE_QUOTE_LITERAL
-}
-
 Token CharLiteral():
 {
-	StringBuilder sb = new StringBuilder();
 	Token tk;
+	String str;
 }
 {
-	(
-		(
-			tk=<S_CHAR_SINGLE_QUOTE_LITERAL> { sb.append(tk.image); }
-			(
-				tk=<S_CHAR_SINGLE_QUOTE_LITERAL> { sb.append(tk.image); }
-			)*
-		)
-		| tk=<S_CHAR_DOUBLE_QUOTE_LITERAL> { sb.append(tk.image); }
-		| tk=<S_QUOTED_IDENTIFIER> { sb.append(tk.image); }
-    )
-    {
-        return new Token(tk.kind, sb.toString());
+    tk="'" str=parseStringValue((char) 0x27) { return new Token(tk.kind, str); }
+    | tk="\"" str=parseStringValue((char) 0x22) { return new Token(tk.kind, str); }
+//    | tk=<S_QUOTED_IDENTIFIER> { return tk; }
+}
+
+JAVACODE
+String parseStringValue(char delimiter) throws ParseException {
+	StringBuilder sb = new StringBuilder();
+    sb.append(delimiter);
+
+    try {
+        char c = jj_input_stream.BeginToken();
+        while (true) {
+            sb.append(c);
+            if (c == delimiter) { // single ou double quote
+                // if followed by another quote, continue, otherwise we are finished
+                char c2 = jj_input_stream.readChar();
+                if (c2 != delimiter) {
+                    jj_input_stream.backup(1);
+                    return sb.toString();
+                }
+                sb.append(c2);
+            } else if (c == 0x5c) { // backslash
+                char c2 = jj_input_stream.readChar();
+                sb.append(c2); // always append following character even if it is a single quote
+            }
+
+            // next character
+            c = jj_input_stream.readChar();
+        }
+    } catch (IOException e) {
+        throw new ParseException("Error while parsing string value: " + e.getMessage());
     }
 }
 

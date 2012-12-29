@@ -93,10 +93,10 @@ public class BasicTest {
 
     @Test
 	public void testCharLiteralEscaping() throws Exception {
-		String str = "INSERT INTO t1 VALUES ('this is a test '' test2 \\' \t\n'' \\' test3 \\'','test4','this is a test '' test5 \\' '' \\' test6 \\\\','test7')";
+		String str = "INSERT INTO t1 VALUES ('this is a test '' test2 \\' \\t\\n'' \\' test3 \\'','test4','this is a test '' test5 \\' '' \\' test6 \\\\','test7')";
 		assertStatementEquals(str);
 
-		str = "INSERT INTO t1 VALUES (\"this is a test test2 \\\" \t\n \\\" test3 \\'\",\"test4\",\"this is a test '' test5 \\' '' \\' test6 \\\\\",\"test7\")";
+		str = "INSERT INTO t1 VALUES (\"this is a test test2 \\\" \\t\\n \\\" test3 \\'\",\"test4\",\"this is a test '' test5 \\' '' \\' test6 \\\\\",\"test7\")";
 		assertStatementEquals(str);
 	}
 }
