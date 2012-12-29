@@ -15,14 +15,14 @@ public class SQLParserManager {
 
         ScriptIterator(SQLParser parser) {
             this.parser = parser;
-            loadNextStatement();
+            parseNextStatement();
         }
 
-        private void loadNextStatement() {
+        private void parseNextStatement() {
             try {
                 nextStatement = parser.ScriptStatement();
             } catch (ParseException e) {
-                throw new IllegalArgumentException("Cannot load next statement", e);
+                throw new IllegalArgumentException("Cannot parse next statement", e);
             }
         }
 
@@ -34,7 +34,7 @@ public class SQLParserManager {
         @Override
         public Statement next() {
             Statement result = nextStatement;
-            loadNextStatement();
+            parseNextStatement();
 
             return result;
         }
