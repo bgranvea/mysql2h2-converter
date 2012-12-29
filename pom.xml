@@ -22,6 +22,12 @@
         </license>
     </licenses>
 
+    <scm>
+        <connection>scm:git:git://github.com/bgranvea/mysql2h2-converter.git</connection>
+        <developerConnection>scm:git:git@github.com:bgranvea/mysql2h2-converter.git</developerConnection>
+        <url>https://github.com/bgranvea/mysql2h2-converter</url>
+    </scm>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
