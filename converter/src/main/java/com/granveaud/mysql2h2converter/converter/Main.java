@@ -29,7 +29,7 @@ public class Main {
                 Statement st = it.next();
 
                 // output to stdout
-                System.out.println(st.toString());
+                System.out.println(st.toString() + ";");
             }
         }
     }
