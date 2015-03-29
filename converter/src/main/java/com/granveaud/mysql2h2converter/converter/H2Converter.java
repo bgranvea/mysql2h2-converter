@@ -157,6 +157,11 @@ public class H2Converter {
                     delayedStatements.add(new AlterTableStatement(false, createStatement.getTableName(), Arrays.asList(new AlterTableSpecification("ADD", constraint))));
                     it.remove();
                 }
+                if (constraint.getType().equals("KEY")) {
+                    // TODO Translate index types
+                    delayedStatements.add(new CreateIndexStatement(false, null, false, constraint.getIndexName(), createStatement.getTableName(), constraint.getIndexColumnNames()));
+                    it.remove();
+                }
 
                 constraint.setIndexType(null);
             }
