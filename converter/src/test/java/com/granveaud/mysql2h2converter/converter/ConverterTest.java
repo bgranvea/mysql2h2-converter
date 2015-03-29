@@ -136,6 +136,11 @@ public class ConverterTest {
         loadScript("xwiki-sqlyog.sql");
     }
 
+    @Test
+    public void testScriptCreateTableWithKey() throws Exception {
+        loadScript("create-table-with-key.sql");
+    }
+
     private void loadScript(String s) throws Exception {
         long time0 = System.currentTimeMillis();
 
