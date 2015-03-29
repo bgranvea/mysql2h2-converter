@@ -136,6 +136,11 @@ public class ConverterTest {
         loadScript("xwiki-sqlyog.sql");
     }
 
+    @Test
+    public void testScriptCreateTableWithOnDeleteAction() throws Exception {
+        loadScript("create-table-with-constraint-on-delete.sql");
+    }
+
     private void loadScript(String s) throws Exception {
         long time0 = System.currentTimeMillis();
 

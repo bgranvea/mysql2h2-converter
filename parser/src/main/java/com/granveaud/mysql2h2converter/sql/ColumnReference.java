@@ -36,6 +36,6 @@ public class ColumnReference {
                 (matchFull ? " MATCH FULL" : "") +
                 (matchPartial ? " MATCH PARTIAL" : "") +
                 (onDeleteOption != null ? " ON DELETE " + onDeleteOption : "") +
-                (onUpdateOption != null ? " MATCH PARTIAL " + onUpdateOption : "");
+                (onUpdateOption != null ? " ON UPDATE " + onUpdateOption : "");
     }
 }

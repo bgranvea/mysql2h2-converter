@@ -636,12 +636,8 @@ ColumnReference ColumnReference():
 {
     <REFERENCES> tableName=DbObjectName() ["(" columnNames=DbObjectNames() ")"]
     [<MATCH> (tk=<FULL> | tk2=<PARTIAL>)]
-    [LOOKAHEAD(2) <ON>
-        (
-            <DELETE> onDeleteOption=ReferenceOption()
-            | <UPDATE> onUpdateOption=ReferenceOption()
-        )
-    ]
+    [<ON> <DELETE> onDeleteOption=ReferenceOption()]
+    [<ON> <UPDATE> onUpdateOption=ReferenceOption()]
     {
         return new ColumnReference(tableName, columnNames, tk != null, tk2 != null,
             onDeleteOption, onUpdateOption);
