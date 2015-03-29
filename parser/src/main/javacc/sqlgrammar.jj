@@ -28,6 +28,7 @@ SKIP:
 |   "\n"
 |   <S_LINE_COMMENT: "--"(~["\r","\n"])*>
 |   <S_MULTI_LINE_COMMENT: "/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/">
+|   "DELIMITER"
 }
 
 // reserved SQL keywords
