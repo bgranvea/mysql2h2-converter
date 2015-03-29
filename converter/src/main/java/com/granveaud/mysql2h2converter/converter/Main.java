@@ -4,12 +4,12 @@ import com.granveaud.mysql2h2converter.parser.ParseException;
 import com.granveaud.mysql2h2converter.parser.SQLParserManager;
 import com.granveaud.mysql2h2converter.sql.Statement;
 
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Iterator;
+import java.util.zip.GZIPInputStream;
 
 public class Main {
     final static private Charset INPUT_CHARSET = Charset.forName("UTF-8");
@@ -21,7 +21,8 @@ public class Main {
         }
 
         for (String str : args) {
-            Iterator<Statement> sourceIterator = SQLParserManager.parseScript(new InputStreamReader(new FileInputStream(str), INPUT_CHARSET));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(readFile(str), INPUT_CHARSET));
+            Iterator<Statement> sourceIterator = SQLParserManager.parseScript(reader);
 
             // conversion and execution
             Iterator<Statement> it = H2Converter.convertScript(sourceIterator);
@@ -32,5 +33,21 @@ public class Main {
                 System.out.println(st.toString() + ";");
             }
         }
+
+    }
+
+    public static InputStream readFile(String name) throws IOException {
+        InputStream input = new BufferedInputStream(new FileInputStream(name));
+        PushbackInputStream pb = new PushbackInputStream( input, 2 );
+        byte [] magicbytes = new byte[2];
+        pb.read(magicbytes);
+        pb.unread(magicbytes);
+        ByteBuffer bb = ByteBuffer.wrap(magicbytes);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        short magic = bb.getShort();
+        if( magic == (short)GZIPInputStream.GZIP_MAGIC )
+            return new GZIPInputStream( pb );
+        else
+            return pb;
     }
 }
